@@ -1,6 +1,6 @@
 # LAN FireWall
 
-Minecraft 基岩版局域网服务器广告防火墙。通过 WinDivert 内核级数据包拦截，精准过滤局域网游戏列表中泛滥的服务器广告。
+Minecraft Java局域网服务器广告防火墙。通过 WinDivert 内核级数据包拦截，精准过滤局域网游戏列表中泛滥的服务器广告。
 
 ## 工作原理
 
