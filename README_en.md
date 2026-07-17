@@ -1,4 +1,4 @@
-# LanFireWall
+# LAN FireWall
 
 A kernel-level firewall for Minecraft Bedrock Edition LAN server advertisements. Uses WinDivert to intercept and filter spam broadcasts that flood the in-game LAN server list.
 
