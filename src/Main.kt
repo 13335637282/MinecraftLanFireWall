@@ -3,24 +3,15 @@ import Tools.colorGradient
 import Tools.parseMcStyle
 import com.github.ffalcinelli.jdivert.Packet
 import com.github.ffalcinelli.jdivert.WinDivert
-import com.github.ffalcinelli.jdivert.headers.Udp
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
-import org.mozilla.universalchardet.CharsetListener
 import org.mozilla.universalchardet.UniversalDetector
 import java.nio.charset.Charset
 import kotlin.system.exitProcess
-import org.fusesource.jansi.Ansi
-import org.fusesource.jansi.Ansi.ansi
 import org.fusesource.jansi.AnsiConsole
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 fun detectCharset(bytes: ByteArray): String? {
     val detector = UniversalDetector {
-        fun report(s: String) {
-            println(s)
-        }
     }
     detector.handleData(bytes, 0, bytes.size)
     detector.dataEnd()
@@ -29,13 +20,9 @@ fun detectCharset(bytes: ByteArray): String? {
 
 fun extractLastContent(text: String, tag: String): String {
     // 使用 [\s\S]* 贪婪匹配任意字符（包括换行），直到最后一个闭标签
-    val regex = Regex("""\[$tag\]([\s\S]*)\[/$tag\]""")
+    val regex = Regex("""\[$tag]([\s\S]*)\[/$tag]""")
     val result = regex.find(text)?.groupValues?.get(1)
-    if (result != null) {
-        return result
-    } else {
-        return ""
-    }
+    return result ?: ""
 }
 
 fun decodePacket(packet: Packet): Map<String, String> {
@@ -45,14 +32,12 @@ fun decodePacket(packet: Packet): Map<String, String> {
 
     packet.udp.ifPresent { packet ->
 
-        var text: String
-
-        try {
-            text = String(packet.data, Charsets.UTF_8)
-        } catch (e: Exception) {
+        val text: String = try {
+            String(packet.data, Charsets.UTF_8)
+        } catch (_: Exception) {
             val encoding = detectCharset(packet.data)
             if (encoding != null) {
-                text = String(packet.data, Charset.forName(encoding))
+                String(packet.data, Charset.forName(encoding))
             } else {
                 return@ifPresent
             }
@@ -78,10 +63,10 @@ fun decodePacket(packet: Packet): Map<String, String> {
 @Volatile
 private var running = true
 
-val S_PPM_THRESHOLD = 30
-val IP_PPM_THRESHOLD = (30*1.5).roundToInt()
-val S_PP_1_5_THRESHOLD = (30 * 0.14).roundToInt()
-val IP_PP_1_5_THRESHOLD = (30 * 1.5 * 2.5).roundToInt()
+const val S_PPM_THRESHOLD = 30
+const val IP_PPM_THRESHOLD = 80
+const val S_PP_1_5_THRESHOLD = 8
+const val IP_PP_1_5_THRESHOLD = 20
 
 fun main(args: Array<String>) {
     Elevate.init(args)
@@ -95,7 +80,7 @@ fun main(args: Array<String>) {
     logger.info("管理员权限请求成功")
 
     val serverPPMMap = hashMapOf<String, PPTCounter>()
-    val IP_PPMMap = hashMapOf<String, PPTCounter>()
+    val ipPPMMap = hashMapOf<String, PPTCounter>()
     val filter = "udp.DstPort == 4445"
 
     // 使用 use 确保资源释放
@@ -119,39 +104,41 @@ fun main(args: Array<String>) {
                     || packetData["motd"] == null
                     || packetData["ad"] == null)
                 {
-                    throw NullPointerException("packetData is NNNNUUUUULLLLLLLLLLLL!!!")
+                    throw NullPointerException("Packet has null data!!!")
                 }
 
                 val sid = "${packetData["srcIP"]}/${packetData["srcPort"]}/${packetData["dstIP"]}"
 
                 val counter = serverPPMMap.getOrPut(sid) { PPTCounter(60.0) }
                 counter.trig()
-                val IP_counter = IP_PPMMap.getOrPut("${packetData["srcIP"]}") { PPTCounter(60.0) }
-                IP_counter.trig()
+                val ipCounter = ipPPMMap.getOrPut("${packetData["srcIP"]}") { PPTCounter(60.0) }
+                ipCounter.trig()
 
                 if (counter.getPerTime(60.0) > S_PPM_THRESHOLD
                     || counter.getPerTime(1.5) > S_PP_1_5_THRESHOLD
-                    || IP_counter.getPerTime(60.0) > IP_PPM_THRESHOLD
-                    || IP_counter.getPerTime(1.5) > IP_PP_1_5_THRESHOLD){
+                    || ipCounter.getPerTime(60.0) > IP_PPM_THRESHOLD
+                    || ipCounter.getPerTime(1.5) > IP_PP_1_5_THRESHOLD){
                     allow = false
                 }
 
-                if (true) {
+                val showFilter = true
+
+                if (showFilter) {
                     println("src: ${packetData["srcIP"]}:${packetData["srcPort"]}")
                     println("server: ${packetData["srcIP"]}:${packetData["ad"]}")
                     println(packetData["motd"]?.let { "Motd: ${parseMcStyle(it)}" })
                     println("dst: ${packetData["dstIP"]}:${packetData["dstPort"]}")
                     println("S-PPM: ${colorGradient(counter.getPerTime(60.0),S_PPM_THRESHOLD)}")
-                    println("IP-PPM: ${colorGradient(IP_counter.getPerTime(60.0),IP_PPM_THRESHOLD)}")
+                    println("IP-PPM: ${colorGradient(ipCounter.getPerTime(60.0),IP_PPM_THRESHOLD)}")
                     println("S-PP1.5: ${colorGradient(counter.getPerTime(1.5),S_PP_1_5_THRESHOLD)}")
-                    println("IP-PP1.5: ${colorGradient(IP_counter.getPerTime(1.5),IP_PP_1_5_THRESHOLD)}")
+                    println("IP-PP1.5: ${colorGradient(ipCounter.getPerTime(1.5),IP_PP_1_5_THRESHOLD)}")
 
                 }
 
                 if (allow) {
                     w.send(packet)
                 }
-            } catch (e: InterruptedException) {
+            } catch (_: InterruptedException) {
                 // 如果线程被中断，退出循环
                 logger.warn("捕获中断信号，退出防火墙")
                 break

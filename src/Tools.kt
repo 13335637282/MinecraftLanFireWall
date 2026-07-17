@@ -15,7 +15,7 @@ object Tools {
             Triple(255, 0, 0)
         } else {
             val hue = 180f - (value.toFloat() / maxValue) * 180f
-            hslToRgb(hue / 360f, 1f, 0.5f)
+            hslToRgb(hue / 360f)
         }
 
         val bold = value > maxValue
@@ -46,7 +46,7 @@ object Tools {
     /**
      * HSL → RGB 转换（h, s, l 均为 0..1）
      */
-    private fun hslToRgb(h: Float, s: Float, l: Float): Triple<Int, Int, Int> {
+    private fun hslToRgb(h: Float, s: Float=1.0f, l: Float=0.5f): Triple<Int, Int, Int> {
         if (s == 0f) {
             val gray = (l * 255).toInt()
             return Triple(gray, gray, gray)
@@ -121,33 +121,31 @@ object Tools {
             val ch = text[i]
             // 检查是否为前缀符且后面还有字符
             if (ch == colorPrefix && i < maxIdx) {
-                val next = text[i + 1]
-                when {
-                    // ----- 标准色码 (0-9, a-f) -----
-                    next in stdColors -> {
+                when (val next = text[i + 1]) {
+                    in stdColors -> {
                         builder.append(colorAnsi(stdColors[next]!!))
                         i += 2
                     }
                     // ----- 扩展色 (g-w) 注意排除 n（与样式冲突）-----
-                    next in extColors -> {
+                    in extColors -> {
                         builder.append(colorAnsi(extColors[next]!!))
                         i += 2
                     }
                     // ----- 样式码 (l, o, n, m, k) -----
-                    next in styles -> {
+                    in styles -> {
                         builder.append("\u001B[${styles[next]}m")
                         i += 2
                     }
                     // ----- 重置 §r -----
-                    next == 'r' -> {
+                    'r' -> {
                         builder.append("\u001B[0m")  // 重置所有样式和颜色
                         i += 2
                     }
                     // ----- 真彩色 §x§R§R§G§G§B§B (共 14 个字符) -----
-                    next == 'x' && i + 13 <= maxIdx -> {
+                    'x' if i + 13 <= maxIdx -> {
                         // 提取 RRRR GGGG BBBB 的每两个字符
                         val hexStr = buildString {
-                            for (j in 0 until 6) {
+                            for (j in 0..<6) {
                                 append(text[i + 3 + j * 2])
                             }
                         }
