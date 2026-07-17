@@ -11,5 +11,15 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
+    <orderEntry type="library" name="jdivert-3.0.0" level="project" />
+    <orderEntry type="library" name="permissions-0.20.1-sources" level="project" />
+    <orderEntry type="library" name="jna-5.19.1" level="project" />
+    <orderEntry type="library" name="jna-platform-5.19.1" level="project" />
+    <orderEntry type="library" name="commons-logging-1.4.0" level="project" />
+    <orderEntry type="library" name="juniversalchardet-1.0.3" level="project" />
+    <orderEntry type="library" name="jansi-2.4.3" level="project" />
+    <orderEntry type="library" name="annotations-13.0-sources" level="project" />
+    <orderEntry type="library" name="annotations-13.0" level="project" />
+    <orderEntry type="library" name="kotlin-stdlib-2.0.10" level="project" />
   </component>
 </module>
