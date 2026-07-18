@@ -4,7 +4,7 @@ A kernel-level firewall for Minecraft Java Edition LAN server advertisements. Us
 
 ## How It Works
 
-Minecraft Bedrock Edition uses UDP broadcasts (default port 4445) for LAN server discovery. Malicious servers exploit this by continuously broadcasting MOTD and AD data to the local network, drowning legitimate LAN games in ads.
+Minecraft Java Edition uses UDP broadcasts (default port 4445) for LAN server discovery. Malicious servers exploit this by continuously broadcasting MOTD and AD data to the local network, drowning legitimate LAN games in ads.
 
 LanFireWall intercepts all packets headed to UDP 4445 at the kernel level, tracks per-server packet rates with a sliding window algorithm, and drops any packet that exceeds the configured thresholds. Filtered packets never reach the game client.
 
@@ -94,6 +94,5 @@ lib/                 # Third-party jar dependencies
 
 ## Notes
 
-- The filter rule is currently hardcoded as `udp.DstPort == 4445`, targeting only Bedrock LAN broadcasts
+- The filter rule is currently hardcoded as `udp.DstPort == 4445`, targeting only Java LAN broadcasts
 - The sliding window retains at most 60 seconds of history; memory footprint is minimal and expired entries are cleaned automatically
-- On elevation, the original process exits and the child process carries a `--elevated-token` flag to prevent infinite recursion

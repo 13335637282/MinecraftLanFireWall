@@ -1,4 +1,3 @@
-
 import Tools.colorGradient
 import Tools.parseMcStyle
 import com.github.ffalcinelli.jdivert.Packet
